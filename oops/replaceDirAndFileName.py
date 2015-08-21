@@ -4,9 +4,9 @@ import shutil
 # path = '/Volumes/Charlie/.p/finished/'
 #path = '/Users/acgreen1226/Documents/.Downloads/finished/'
 path = '/Volumes/Delta/.p2/finished/'
-targetName = 'angelica_sage'
+targetName = ''
 targetPath = path + targetName
-newName = 'angelica_saige'
+newName = ''
 
 print('searching: ' + targetPath)
 if os.path.exists(targetPath) and os.path.isdir(targetPath):
