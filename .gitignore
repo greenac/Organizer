@@ -1,0 +1,8 @@
+.file_names
+.file_names.txt
+.latest.txt
+.shell_completion
+names.txt
+*.idea
+*.pyc
+__pycache__
