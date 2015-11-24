@@ -4,27 +4,13 @@ from organize.printFormatter import PrintFormatter
 
 class Organizer:
     def __init__(self, names, topLevelDirPath, targetFolderRootPath):
-        self.topLevelDirectoryPath = self.checkTopLevelPathForEndingBackslash(topLevelDirPath)
-        self.targetFolderRootPath = self.checkRootFolderPathForEndingBackslash(targetFolderRootPath)
+        self.topLevelDirectoryPath = topLevelDirPath
+        self.targetFolderRootPath = targetFolderRootPath
         self.fileNames = os.listdir(topLevelDirPath)
         self.names = names
         self.dirNames = []
         self.printFormatter = PrintFormatter()
         self.repeatedDirName = "REPEATED_DIRECTORY"
-
-    def checkTopLevelPathForEndingBackslash(self, topLevelDirectoryPath):
-        size = len(topLevelDirectoryPath)
-        if topLevelDirectoryPath[size - 1] == "/":
-            return topLevelDirectoryPath
-        else:
-            return topLevelDirectoryPath + "/"
-
-    def checkRootFolderPathForEndingBackslash(self, targetRootFolderPath):
-        size = len(targetRootFolderPath)
-        if targetRootFolderPath[size - 1] == "/":
-            return targetRootFolderPath
-        else:
-            return targetRootFolderPath + "/"
 
     def newDirName(self, name):
         nameList = self.names.seperateNames(name)
@@ -73,11 +59,10 @@ class Organizer:
         return dirName
 
     def makeNewDirectoryPath(self, name, repeat=False):
+        newDirName = self.newDirName(name)
         if repeat:
-            dirName = self.newDirName(name) + "_repeat/"
-        else:
-            dirName = self.newDirName(name) + "/"
-        newDirPath = self.targetFolderRootPath + dirName
+            newDirName = newDirName + "_repeat/"
+        newDirPath = os.path.join(self.targetFolderRootPath, newDirName)
         return newDirPath
 
     def makeNewDirectory(self, name, repeat=False):
@@ -121,10 +106,10 @@ class Organizer:
                 newDir = self.makeNewDirectory(name)
                 printNames = []
                 for aFile in files:
-                    source = self.topLevelDirectoryPath + aFile
-                    destination = dirPath + aFile
-                    if source != destination:
-                        shutil.move(source, destination)
+                    src = os.path.join(self.topLevelDirectoryPath, aFile)
+                    dst = os.path.join(dirPath, aFile)
+                    if src != dst:
+                        shutil.move(src, dst)
                         printNames.append(aFile)
                 self.printInfo(name, printNames, dirPath, newDir)
         self.printNumberOfFiles()
@@ -142,8 +127,8 @@ class Organizer:
                     isNewDir = self.makeNewDirectory(firstName, True)
                     names = []
                     for aFile in files:
-                        src = self.topLevelDirectoryPath + aFile
-                        dst = dirPath + aFile
+                        src = os.path.join(self.topLevelDirectoryPath, aFile)
+                        dst = os.path.join(dirPath, aFile)
                         if src != dst:
                             shutil.move(src, dst)
                             names.append(aFile)
@@ -155,8 +140,8 @@ class Organizer:
                     isNewDir = self.makeNewDirectory(name)
                     names = []
                     for aFile in files:
-                        src = self.topLevelDirectoryPath + aFile
-                        dst = dirPath + aFile
+                        src = os.path.join(self.topLevelDirectoryPath, aFile)
+                        dst = os.path.join(dirPath, aFile)
                         if src != dst:
                             shutil.move(src, dst)
                             names.append(aFile)

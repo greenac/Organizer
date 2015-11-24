@@ -27,7 +27,8 @@ class RunOrganizer(object):
             'remove',
             'organize',
             'addnames',
-            'testfiles'
+            'testfiles',
+            'cachenames'
         ]
 
     def run(self):
@@ -52,9 +53,12 @@ class RunOrganizer(object):
             self.add_names()
         elif control == 'testfiles':
             self.create_test_files()
+        elif control == 'cachenames':
+            self.cache_names()
         else:
             raise  OrganizerExceptions.UnknownArgumentExeption(
-                control + ' is not a valid argument. Available args are: ' + ', '.join(self.valid_args)
+                control + ' is not a valid argument. Available args are: '
+                + ', ' + str(self.valid_args)
             )
         return None
 
@@ -89,11 +93,14 @@ class RunOrganizer(object):
         except IndexError:
             raise OrganizerExceptions.CommandLineArgumentException('Must Enter a destination argument.')
         if dst == 'local':
-            sourcePath = "/Users/agreen/.stage/finished/organized/"
-            destinationPath = "/Volumes/Echo/.p/finished/"
+            sourcePath = '/Users/agreen/.stage/finished/organized/'
+            destinationPath = '/Volumes/Echo/.p/finished/'
         elif dst == 'p':
-            sourcePath = "/Volumes/Charlie/.p/finished/"
-            destinationPath = "/Volumes/Charlie/.p/"
+            sourcePath = '/Volumes/Charlie/.p/finished/'
+            destinationPath = '/Volumes/Charlie/.p/'
+        elif dst == 'papa':
+            sourcePath = '/Volumes/Papa/.finished/organized/'
+            destinationPath = '/Volumes/Papa/.p/'
         else:
             message = 'Error: ' + dst + ' not a recognized destination. Enter either local or p as destination'
             raise OrganizerExceptions.UnknownArgumentExeption(message)
@@ -108,8 +115,10 @@ class RunOrganizer(object):
         return None
 
     def add_names_to_files(self):
-        path = '/Users/agreen/.stage/finished/'
-        # path = '/Volumes/Charlie/.p/
+        #path = '/Users/agreen/.stage/finished/'
+        #path = '/Volumes/Charlie/.p/
+        path = '/Volumes/Papa/.finished/'
+
         try:
             dir_name = ''
             for arg in self.args:
@@ -136,14 +145,16 @@ class RunOrganizer(object):
 
     def unknown_files(self):
         path_list = [
-            '/Users/agreen/.stage/finished/organized/',
+            #'/Users/agreen/.stage/finished/organized/',
             '/Volumes/Charlie/.p/',
             '/Volumes/Charlie/.p/finished/',
-            '/Volumes/Echo/.p/finished/'
+            '/Volumes/Echo/.p/finished/',
+            '/Volumes/Papa/.finished/',
+            '/Volumes/Papa/.finished/organized/',
+            '/Volumes/Papa/.p/'
             ]
-        # pathList = ['/Users/acgreen1226/Documents/.Downloads/finished/organized/']
-        #path = '/Volumes/Charlie/.p/finished/'
-        path = '/Users/agreen/.stage/finished/'
+        path = '/Volumes/Papa/.finished/'
+        #path = '/Users/agreen/.stage/finished/'
         do_not_print = ['.DS_Store', 'organized', 'music']
         unknown = UnknownFiles(path, path_list, namesNotToPrint=do_not_print, runLocal=False)
         unknown.printFiles()
@@ -165,9 +176,10 @@ class RunOrganizer(object):
         run_from_p = True
         files_to_top = True
         remove_files = True
-        top_level_path = "/Users/agreen/.stage/finished/"
+        #top_level_path = "/Users/agreen/.stage/finished/"
         # topLevelPath = '/Volumes/Charlie/.p/finished/'
-        target_path = top_level_path + "organized/"
+        top_level_path = '/Volumes/Papa/.finished/'
+        target_path = os.path.join(top_level_path, 'organized')
         excluded_names = ['random', 'series', 'finished']
         names = Names(namesToExclude=excluded_names)
         if run_from_p:
@@ -198,7 +210,8 @@ class RunOrganizer(object):
         return None
 
     def add_names(self):
-        path = '/Users/agreen/.stage/finished/'
+        #path = '/Users/agreen/.stage/finished/'
+        path = '/Volumes/Papa/.finished/'
         adder = NameAdder(self.args, path)
         adder.renameFiles()
         return None
@@ -208,7 +221,19 @@ class RunOrganizer(object):
         file_creator.create()
         return None
 
+    def cache_names(self):
+        path_list = [
+            #'/Users/agreen/.stage/finished/organized/',
+            '/Volumes/Charlie/.p/',
+            '/Volumes/Charlie/.p/finished/',
+            '/Volumes/Echo/.p/finished/',
+            '/Volumes/Papa/.finished/organized/',
+            '/Volumes/Papa/.p/'
+            ]
+        excluded_names = ['random', 'series', 'finished']
+        names = Names(namesToExclude=excluded_names)
+        names.updateCachedNames(path_list)
+
 
 run_organizer = RunOrganizer(sys.argv)
-#run_organizer = RunOrganizer(['run.py', 'movedirs', 'local'])
 run_organizer.run()

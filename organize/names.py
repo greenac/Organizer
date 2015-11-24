@@ -1,10 +1,24 @@
 import os
+import json
+
 class Names:
-    def __init__(self, fileName='files/names.txt', completionFile='files/.shell_completion', namesToExclude=[]):
+    def __init__(
+            self,
+            fileName='files/names.txt',
+            cachedNameFile='files/cached_names.json',
+            completionFile='files/.shell_completion',
+            namesToExclude=[]
+    ):
         self.fileName = fileName
+        self.cachedNameFile = cachedNameFile
         self.completionFileName = completionFile
         self.nameList = []
         self.namesToExclude = namesToExclude
+
+    def cleanUp(self):
+        self.removeExcludedNames()
+        self.nameList.sort()
+        return None
 
     def removeExcludedNames(self):
         self.makeNameListUnique()
@@ -17,8 +31,18 @@ class Names:
         namesFile = open(self.fileName, 'r')
         for name in namesFile:
             if name != '\n':
-                self.nameList.append(name.replace('\n', ''))
+                self.nameList.append(name.lower().replace('\n', ''))
         namesFile.close()
+        return None
+
+    def getNamesFromCacheFile(self):
+        with open(self.cachedNameFile, 'r') as cachedNamesFile:
+            try:
+                cacheNames = json.load(cachedNamesFile)
+                self.nameList += cacheNames
+            except ValueError:
+                pass
+        cachedNamesFile.close()
         return None
 
     def getNamesFromCompletionFile(self):
@@ -35,46 +59,34 @@ class Names:
     def getNamesFromDirs(self, pathsList):
         namesFromDirs = []
         for path in pathsList:
-            namesForPath = os.listdir(path)
-            for name in list(namesForPath):
-                if not os.path.isdir(path + name):
+            try:
+                namesForPath = list(os.listdir(path))
+            except FileNotFoundError:
+                continue
+            for name in namesForPath:
+                if not os.path.isdir(os.path.join(path, name)):
                     namesForPath.remove(name)
             namesFromDirs = namesFromDirs + namesForPath
-        self.nameList = self.nameList + self.removeUnderscore(namesFromDirs)
+        self.nameList += self.removeUnderscore(namesFromDirs)
         return None
 
-    def getNamesFromFiles(self):
+    def getNamesFromFiles(self, shouldCleanUp=True):
         self.getNamesFromFile()
         self.getNamesFromCompletionFile()
-        self.removeExcludedNames()
+        self.getNamesFromCacheFile()
+        if shouldCleanUp:
+            self.cleanUp()
         return None
 
     def getNamesFromFilesAndDirs(self, pathsList):
-        self.getNamesFromFile()
-        self.getNamesFromCompletionFile()
+        self.getNamesFromFiles(shouldCleanUp=False)
         self.getNamesFromDirs(pathsList)
-        self.removeExcludedNames()
+        self.cleanUp()
         return None
 
     def makeNameListUnique(self):
-        i = 0
-        cont = True
-        while cont:
-            name = self.nameList.pop(i)
-            size = self.removeRepeatName(name) + 1
-            self.nameList.insert(i, name)
-            i += 1
-            if i >= size:
-                cont = False
+        self.nameList = list(set(self.nameList))
         return None
-
-    def removeRepeatName(self, name):
-        self.nameList.reverse()
-        if name in list(self.nameList):
-            self.nameList.remove(name)
-            self.removeRepeatName(name)
-        self.nameList.reverse()
-        return len(self.nameList)
 
     def removeUnderscore(self, nameList):
         cleanNameList = []
@@ -122,3 +134,10 @@ class Names:
             return True
         else:
             return False
+
+    def updateCachedNames(self, paths):
+        self.getNamesFromFilesAndDirs(paths)
+        with open(self.cachedNameFile, 'w') as cachedNamesFile:
+            json.dump(self.nameList, cachedNamesFile)
+        cachedNamesFile.close()
+        return None

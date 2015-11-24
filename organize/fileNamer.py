@@ -1,4 +1,5 @@
 from organize.fileFormatter import FileFormatter
+from organize.organizerErros import WrongNameFormatException
 
 class FileNamer:
     def __init__(self):
@@ -53,6 +54,22 @@ class FileNamer:
                 newFile = aFile + '_' + firstName
         newFile = self.replacePunctuation(newFile, pathToFile)
         return newFile
+
+    def make_new_filename_multiple_names(self, names_list, file, file_path):
+        for name_list in names_list:
+            first_name = name_list[0]
+            try:
+                last_name = name_list[1]
+            except IndexError:
+                raise WrongNameFormatException('a name must have a first and last name')
+            file = self.makeNewFileName(
+                [first_name, last_name],
+                file,
+                file_path
+            )
+        return file
+
+
 
     def replacePunctuation(self, aFile, pathToFile):
         isMovie = False

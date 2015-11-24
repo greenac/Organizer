@@ -12,7 +12,10 @@ class Balancer(object):
         self._constants = BalanceConstants()
 
     def _create_trees(self):
-        self.trees = [BalanceTree(value[self._constants.disk_path], value[self._constants.root_path])
+        self.trees = [
+            BalanceTree(
+                value[self._constants.disk_path],
+                value[self._constants.root_path])
                       for value in self.tree_values]
         return None
 
@@ -23,8 +26,16 @@ class Balancer(object):
             from_index = self._move_tree_index(False)
             to_tree = self.trees[to_index]
             from_tree = self.trees[from_index]
-            print('from index:', from_index, 'moving from:', from_tree.root_path, 'with used space:', from_tree.used_space)
-            print('to index:', to_index, 'moving to:', to_tree.root_path, 'with used space:', to_tree.used_space)
+            print(
+                'from index:', from_index,
+                'moving from:', from_tree.root_path,
+                'with used space:', from_tree.used_space
+            )
+            print(
+                'to index:', to_index,
+                'moving to:', to_tree.root_path,
+                'with used space:', to_tree.used_space
+            )
             if from_index > to_index:
                 lower_index = to_index
                 upper_index = from_index
@@ -86,8 +97,3 @@ class Balancer(object):
 
     def _keep_balancing(self, to_tree, balance_file):
         return None
-
-    def _add_slash_to_dir(self, dir):
-        if dir[len(dir) - 1] != '/':
-            dir += '/'
-        return dir

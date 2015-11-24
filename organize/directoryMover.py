@@ -13,8 +13,8 @@ class DirectoryMover:
 
     def move_dirs(self):
         for file_name in self.files:
-            source_path = self.src_path + file_name
-            destination_path = self.dst_path + file_name
+            source_path = os.path.join(self.src_path, file_name)
+            destination_path = os.path.join(self.dst_path, file_name)
             self.move_single_dir(source_path, destination_path)
             print(self.print_formatter.acrossScreen('-') + '\n')
         return None
@@ -32,16 +32,16 @@ class DirectoryMover:
                         print("Pre-existing file: " + target_file + " already exists in " + dst_path + "\n")
                     else:
                         shutil.move(sourceFile, dst_path)
-                        print("Moving: " + sourceFile + "\nTo: " + dst_path + target_file + "\n")
+                        print("Moving: " + sourceFile + "\nTo: " + os.path.join(dst_path, target_file) + "\n")
                         self._add_file_to_moved_files(file_name, target_file)
             else:
                 print("No Directory named: " + file_name + " exists in " + self.dst_path)
-                print('Creating: ' + os.path.join(self.dst_path, file_name) + '\n')
+                print('Creating: ' + dst_path + '\n')
                 print("Moving: " + src_path + "\nTo: " + dst_path + "\n")
                 names = os.listdir(src_path)
                 for name in names:
                     self._add_file_to_moved_files(file_name, name)
-                    print("Moving: " + src_path + name + "\nTo: " + dst_path + name + "\n")
+                    print("Moving: " + os.path.join(src_path, name) + "\nTo: " + os.path.join(dst_path, name) + "\n")
                 shutil.move(src_path, dst_path)
         return None
 

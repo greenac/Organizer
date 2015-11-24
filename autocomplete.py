@@ -1,4 +1,4 @@
-from organizer.organize import Names
+from organize.names import Names
 import os
 import sys
 from subprocess import call
@@ -13,8 +13,13 @@ fPath_files = 'files/.file_names'
 worked = True
 
 if state == 'on':
-    dirs = ['/Users/agreen/.stage/finished/organized/', '/Volumes/Charlie/.p/', '/Volumes/Charlie/.p/finished/',
-            '/Volumes/Echo/.p/', '/Volumes/Echo/.p/finished/']
+    dirs = [
+        '/Users/agreen/.stage/finished/organized/',
+        '/Volumes/Charlie/.p/',
+        '/Volumes/Charlie/.p/finished/',
+        '/Volumes/Echo/.p/',
+        '/Volumes/Echo/.p/finished/'
+    ]
 
     paths = []
 
