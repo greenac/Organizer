@@ -47,6 +47,20 @@ class NameAdder:
             i += 2
         return None
 
+    def renameFile(self, unknownFile, names):
+        old_name = unknownFile.file_name
+        new_name = FileNamer().make_new_filename_multiple_names(
+            self._handle_names(names),
+            old_name,
+            self.path
+        )
+        shutil.move(
+            os.path.join(self.path, old_name),
+            os.path.join(self.path, new_name)
+        )
+        print('moving:', old_name, '-----> to:', new_name, '\n')
+        return new_name
+
     def _handle_names(self, names):
         names_list = names.split(',')
         if len(names_list) == 1:

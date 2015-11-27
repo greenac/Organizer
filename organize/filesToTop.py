@@ -33,8 +33,9 @@ class FilesToTop:
         currentDirPath = self.addSlashToDir(currentDirPath)
         counter = 1
         for aFile in files:
-            if os.path.isdir(currentDirPath + aFile) and 'keep_dir_together' not in aFile.lower():
-                self.addNameToAllFilesInDir(nameList, topDir, currentDirPath + aFile)
+            filePath = os.path.join(currentDirPath, aFile)
+            if os.path.isdir(filePath) and 'keep_dir_together' not in aFile.lower():
+                self.addNameToAllFilesInDir(nameList, topDir, filePath)
             else:
                 newFile = self.makeNewFile(nameList, aFile, currentDirPath, counter)
                 if newFile is not None:
@@ -63,7 +64,7 @@ class FilesToTop:
     def moveFilesToTop(self):
         files = os.listdir(self.rootPath)
         for aFile in files:
-            dirPath = self.rootPath + aFile
+            dirPath = os.path.join(self.rootPath, aFile)
             if os.path.isdir(dirPath) and aFile.lower() not in self.exceptedDirs:
                 print('\n' + self.printFormatter.acrossScreenWithName('-', aFile) + '\n')
                 dirPath = self.addSlashToDir(dirPath)

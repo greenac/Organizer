@@ -69,8 +69,6 @@ class FileNamer:
             )
         return file
 
-
-
     def replacePunctuation(self, aFile, pathToFile):
         isMovie = False
         if self.fileFormatter.fileContainsFormat(aFile, pathToFile):

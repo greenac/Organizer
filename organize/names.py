@@ -4,9 +4,9 @@ import json
 class Names:
     def __init__(
             self,
-            fileName='files/names.txt',
-            cachedNameFile='files/cached_names.json',
-            completionFile='files/.shell_completion',
+            fileName=os.path.join(os.path.dirname(os.path.realpath(__file__)), '../files/names.txt'),
+            cachedNameFile=os.path.join(os.path.dirname(os.path.realpath(__file__)), '../files/cached_names.json'),
+            completionFile=os.path.join(os.path.dirname(os.path.realpath(__file__)), '../files/.shell_completion'),
             namesToExclude=[]
     ):
         self.fileName = fileName

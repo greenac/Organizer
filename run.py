@@ -14,7 +14,8 @@ from organize.names import Names
 from organize.nameAdder import NameAdder
 from organize.createTestFiles import CreateTestFiles
 from organize.directoryMover import DirectoryMover
-
+from organize.addDirNameToFiles import AddDirNameToFiles
+from organize.unknownFilesInterface import UnknownFilesController
 
 class RunOrganizer(object):
     def __init__(self, args):
@@ -24,6 +25,7 @@ class RunOrganizer(object):
             'movedirs',
             'adddir',
             'unknown',
+            'unknowncontroller'
             'remove',
             'organize',
             'addnames',
@@ -45,6 +47,8 @@ class RunOrganizer(object):
             self.add_names_to_files()
         elif control == 'unknown':
             self.unknown_files()
+        elif control == 'unknowncontroller':
+            self.unknown_interface()
         elif control == 'remove':
             self.remove_files()
         elif control == 'organize':
@@ -94,7 +98,8 @@ class RunOrganizer(object):
             raise OrganizerExceptions.CommandLineArgumentException('Must Enter a destination argument.')
         if dst == 'local':
             sourcePath = '/Users/agreen/.stage/finished/organized/'
-            destinationPath = '/Volumes/Echo/.p/finished/'
+            #destinationPath = '/Volumes/Echo/.p/finished/'
+            destinationPath = '/Volumes/Papa/.finished/organized/'
         elif dst == 'p':
             sourcePath = '/Volumes/Charlie/.p/finished/'
             destinationPath = '/Volumes/Charlie/.p/'
@@ -115,32 +120,17 @@ class RunOrganizer(object):
         return None
 
     def add_names_to_files(self):
-        #path = '/Users/agreen/.stage/finished/'
+        path = '/Users/agreen/.stage/finished/'
         #path = '/Volumes/Charlie/.p/
-        path = '/Volumes/Papa/.finished/'
-
+        #path = '/Volumes/Papa/.finished/'
         try:
-            dir_name = ''
-            for arg in self.args:
-                dir_name += ' ' + arg
+            if len(self.args) == 0:
+                raise IndexError
+            dir_name = self.args.join(' ')
         except IndexError:
             raise OrganizerExceptions.CommandLineArgumentException('must provide directory name')
-        if dir_name[0] == ' ':
-            dir_name = dir_name[1:len(dir_name)]
-        print(dir_name)
-        if dir_name[len(dir_name) - 1] == '/':
-            dir_name = dir_name[:len(dir_name) - 1]
-        dir_path = os.path.join(path, dir_name)
-        if os.path.isdir(dir_path):
-            files = os.listdir(dir_path)
-            print('# files:', len(files))
-            for file in files:
-                old_path = os.path.join(dir_path, file)
-                new_path = os.path.join(dir_path, dir_name) + '_' + file
-                shutil.move(old_path, new_path)
-                print('old:', old_path, '\n', 'new:', new_path)
-        else:
-            print(dir_name + ' is not a directory')
+        add_names = AddDirNameToFiles(dir_name, path)
+        add_names.add()
         return None
 
     def unknown_files(self):
@@ -153,11 +143,13 @@ class RunOrganizer(object):
             '/Volumes/Papa/.finished/organized/',
             '/Volumes/Papa/.p/'
             ]
-        path = '/Volumes/Papa/.finished/'
-        #path = '/Users/agreen/.stage/finished/'
+        #path = '/Volumes/Papa/.finished/'
+        path = '/Users/agreen/.stage/finished/'
         do_not_print = ['.DS_Store', 'organized', 'music']
         unknown = UnknownFiles(path, path_list, namesNotToPrint=do_not_print, runLocal=False)
-        unknown.printFiles()
+        unknown.fetchUnknownFiles()
+        unknown.printUnknownFiles()
+        unknown.stepThroughFiles()
         return None
 
     def remove_files(self):
@@ -172,13 +164,14 @@ class RunOrganizer(object):
         return None
 
     def organize(self):
-        run_first_name = True
+        run_first_name = False
         run_from_p = True
         files_to_top = True
         remove_files = True
-        #top_level_path = "/Users/agreen/.stage/finished/"
+        top_level_path = "/Users/agreen/.stage/finished/"
         # topLevelPath = '/Volumes/Charlie/.p/finished/'
-        top_level_path = '/Volumes/Papa/.finished/'
+        #top_level_path = '/Volumes/Papa/.finished/'
+
         target_path = os.path.join(top_level_path, 'organized')
         excluded_names = ['random', 'series', 'finished']
         names = Names(namesToExclude=excluded_names)
@@ -196,7 +189,7 @@ class RunOrganizer(object):
                 '/Volumes/Echo/.p/'
             ]
             names.nameList = []
-            names.getNamesFromDirs(path_list)
+            names.getNamesFromFilesAndDirs(path_list)
             organizerP = Organizer(names, top_level_path, target_path)
             organizerP.moveFilesForFirstAndLastName()
         if run_first_name:
@@ -210,8 +203,8 @@ class RunOrganizer(object):
         return None
 
     def add_names(self):
-        #path = '/Users/agreen/.stage/finished/'
-        path = '/Volumes/Papa/.finished/'
+        path = '/Users/agreen/.stage/finished/'
+        #path = '/Volumes/Papa/.finished/'
         adder = NameAdder(self.args, path)
         adder.renameFiles()
         return None
@@ -233,7 +226,24 @@ class RunOrganizer(object):
         excluded_names = ['random', 'series', 'finished']
         names = Names(namesToExclude=excluded_names)
         names.updateCachedNames(path_list)
+        return None
 
+    def unknown_interface(self):
+        path_list = [
+            #'/Users/agreen/.stage/finished/organized/',
+            '/Volumes/Charlie/.p/',
+            '/Volumes/Charlie/.p/finished/',
+            '/Volumes/Echo/.p/finished/',
+            '/Volumes/Papa/.finished/',
+            '/Volumes/Papa/.finished/organized/',
+            '/Volumes/Papa/.p/'
+            ]
+        #path = '/Volumes/Papa/.finished/'
+        path = '/Users/agreen/.stage/finished/'
+        do_not_print = ['.DS_Store', 'organized', 'music']
+        interface = UnknownFilesController(path, path_list, hide=do_not_print)
+        interface.run()
+        return None
 
 run_organizer = RunOrganizer(sys.argv)
 run_organizer.run()
