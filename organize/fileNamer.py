@@ -38,7 +38,7 @@ class FileNamer:
                     newFile = aFile.replace(firstName, firstName + '_' + lastName + '_', 1)
             else:
                 # file does not contain name
-                if self.fileFormatter.fileContainsFormat(aFile, pathToFile):
+                if self.fileFormatter.file_contains_format(aFile, pathToFile):
                     # file is in a movie format
                     parts = aFile.rpartition('.')
                     newFile = parts[0] + '_' + firstName + '_' + lastName + parts[1] + parts[2]
@@ -47,7 +47,7 @@ class FileNamer:
         else:
             if firstName in aFile:
                 newFile = aFile
-            elif self.fileFormatter.fileContainsFormat(aFile, pathToFile):
+            elif self.fileFormatter.file_contains_format(aFile, pathToFile):
                 parts = aFile.rpartition('.')
                 newFile = parts[0] + '_' + firstName + parts[1] + parts[2]
             else:
@@ -71,7 +71,7 @@ class FileNamer:
 
     def replacePunctuation(self, aFile, pathToFile):
         isMovie = False
-        if self.fileFormatter.fileContainsFormat(aFile, pathToFile):
+        if self.fileFormatter.file_contains_format(aFile, pathToFile):
             length = aFile.rfind('.')
             isMovie = True
         else:

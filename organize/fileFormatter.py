@@ -2,12 +2,24 @@ import os
 
 class FileFormatter:
     def __init__(self):
-        self.fileFormats = ['mp4', 'wmv', 'avi', 'mpg', 'mpeg', 'mov', 'asf', 'mkv', 'flv', 'm4v', 'rmvb']
+        self.file_formats = [
+            'mp4',
+            'wmv',
+            'avi',
+            'mpg',
+            'mpeg',
+            'mov',
+            'asf',
+            'mkv',
+            'flv',
+            'm4v',
+            'rmvb'
+        ]
 
-    def fileContainsFormat(self, aFile, pathToFile):
-        if not os.path.isdir(pathToFile + aFile):
-            formatList = aFile.rsplit('.', 1)
-            if len(formatList) > 1:
-                if formatList[1].lower() in self.fileFormats:
+    def file_contains_format(self, file, path_to_file):
+        if not os.path.isdir(path_to_file + file):
+            format_list = file.rsplit('.', 1)
+            if len(format_list) > 1:
+                if format_list[1].lower() in self.file_formats:
                     return True
         return False

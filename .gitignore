@@ -5,6 +5,3 @@
 *cached_names.json
 unknown
 names.txt
-*.idea
-*.pyc
-__pycache__

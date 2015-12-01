@@ -31,6 +31,7 @@ class Names:
         namesFile = open(self.fileName, 'r')
         for name in namesFile:
             if name != '\n':
+                name = name.replace('_', ' ')
                 self.nameList.append(name.lower().replace('\n', ''))
         namesFile.close()
         return None
@@ -70,15 +71,16 @@ class Names:
         self.nameList += self.removeUnderscore(namesFromDirs)
         return None
 
-    def getNamesFromFiles(self, shouldCleanUp=True):
+    def getNamesFromFiles(self, shouldCleanUp=True, use_current_cache=True):
         self.getNamesFromFile()
         self.getNamesFromCompletionFile()
-        self.getNamesFromCacheFile()
+        if use_current_cache:
+            self.getNamesFromCacheFile()
         if shouldCleanUp:
             self.cleanUp()
         return None
 
-    def getNamesFromFilesAndDirs(self, pathsList):
+    def getNamesFromFilesAndDirs(self, pathsList, use_current_cache=True):
         self.getNamesFromFiles(shouldCleanUp=False)
         self.getNamesFromDirs(pathsList)
         self.cleanUp()
@@ -135,7 +137,7 @@ class Names:
         else:
             return False
 
-    def updateCachedNames(self, paths):
+    def updateCachedNames(self, paths, should_print=False, use_current_cache=True):
         self.getNamesFromFilesAndDirs(paths)
         with open(self.cachedNameFile, 'w') as cachedNamesFile:
             json.dump(self.nameList, cachedNamesFile)

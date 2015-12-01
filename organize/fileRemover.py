@@ -1,4 +1,6 @@
 import os
+import shutil
+
 
 class FileRemover:
     def __init__(self, path, targets, caseSens=False):

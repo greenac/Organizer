@@ -27,6 +27,11 @@ class UnknownFilesController:
         self.setup()
 
     def setup(self):
+        self.unknown_files.fetch_unknown_files()
+        if self.unknown_files.number_of_unknowns() == 0:
+            print("Couldn't find any unknown files...I have nothing to do here...avoir")
+            return None
+
         self.screen.keypad(True)
         curses.start_color()
         for i in range(1, self.colors.count + 1):
@@ -36,7 +41,6 @@ class UnknownFilesController:
                 curses.COLOR_BLACK
             )
         curses.noecho()
-        self.unknown_files.fetch_unknown_files()
         self.all_names = self.unknown_files.names.allNamesUnderscored()
         self.create_title()
         self.show_unknowns()
@@ -241,6 +245,7 @@ class UnknownFilesController:
                 self.names = []
                 for unclean_name in self.current_text.split(','):
                     if '_' in unclean_name:
+                        unclean_name = unclean_name.replace(' ', '')
                         self.names.append(unclean_name)
                     else:
                         names = [part for part in unclean_name.split(' ') if part != '']
@@ -270,7 +275,14 @@ class UnknownFilesController:
             self.current_text = self.current_text[:len(self.current_text) - 1]
         return None
 
-    def print_line(self, message, left_position=0, vertical_position=0, color=0, increment_vertical=True):
+    def print_line(
+            self,
+            message,
+            left_position=0,
+            vertical_position=0,
+            color=0,
+            increment_vertical=True
+    ):
         self.screen.addstr(vertical_position, left_position, message, curses.color_pair(color))
         self.screen.refresh()
         if increment_vertical:
@@ -295,9 +307,43 @@ class UnknownFilesController:
         current_text_parts = parts[len(parts) - 1].split(' ')
         if current_text_parts[0] == '':
             del current_text_parts[0]
-        names = [name for name in self.all_names if '_'.join(current_text_parts) in name]
+        underscored_name = '_'.join(current_text_parts)
+        matched_names = []
+        for name in self.all_names:
+            if len(underscored_name) <= len(name) and underscored_name == name[:len(underscored_name)]:
+                matched_names.append(name)
+
+        #add common letters to current_text
+        letters_to_add = ''
+        if len(matched_names) > 0:
+            first_name = matched_names[0]
+            for i in range(len(underscored_name), len(first_name)):
+                letter = first_name[i]
+                has_letter = True
+                for j in range(1, len(matched_names)):
+                    try:
+                        if matched_names[j][i] != letter:
+                            has_letter = False
+                            break
+                    except IndexError:
+                        has_letter = False
+                        break
+                if has_letter:
+                    letters_to_add += letter
+                else:
+                    break
+            if letters_to_add != '':
+                self.left_position += len(letters_to_add)
+                self.current_text += letters_to_add
+                left_start = self.left_position - len(self.current_text)
+                self.print_line(
+                    self.current_text,
+                    left_position=left_start,
+                    vertical_position=self.vertical_position,
+                    increment_vertical=False
+                )
         self.print_line(
-            ', '.join(names[:5]),
+            ', '.join(matched_names[:10]),
             left_position=self.INDENT_SIZE,
             vertical_position=self.vertical_position + 1,
             increment_vertical=False,

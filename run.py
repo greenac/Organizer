@@ -15,6 +15,7 @@ from organize.createTestFiles import CreateTestFiles
 from organize.directoryMover import DirectoryMover
 from organize.addDirNameToFiles import AddDirNameToFiles
 from organize.unknownFilesController import UnknownFilesController
+from organize.moveToRoot import MoveToRoot
 
 class RunOrganizer(object):
     def __init__(self, args):
@@ -29,7 +30,8 @@ class RunOrganizer(object):
             'organize',
             'addnames',
             'testfiles',
-            'cachenames'
+            'cachenames',
+            'moveroot'
         ]
 
     def run(self):
@@ -58,6 +60,8 @@ class RunOrganizer(object):
             self.create_test_files()
         elif control == 'cachenames':
             self.cache_names()
+        elif control == 'moveroot':
+            self.move_root()
         else:
             raise  OrganizerExceptions.UnknownArgumentExeption(
                 control + ' is not a valid argument. Available args are: '
@@ -152,13 +156,22 @@ class RunOrganizer(object):
         return None
 
     def unknown_interface(self):
+        try:
+            dst = self.args[0].lower()
+        except IndexError:
+            raise OrganizerExceptions.CommandLineArgumentException('Must Enter a destination argument.')
+        if dst == 'local':
+            path = '/Users/agreen/.stage/finished/'
+        elif dst == 'papa':
+            path = '/Volumes/Papa/.finished/'
+        else:
+            raise OrganizerExceptions.CommandLineArgumentException('Must Enter a location argument')
+
         path_list = [
             '/Users/agreen/.stage/finished/organized/',
             '/Volumes/Papa/.finished/organized/',
             '/Volumes/Papa/.p/'
             ]
-        #path = '/Volumes/Papa/.finished/'
-        path = '/Users/agreen/.stage/finished/'
         do_not_print = ['.DS_Store', 'organized', 'music', 'finished']
         interface = UnknownFilesController(path, path_list, hide=do_not_print)
         interface.run()
@@ -176,22 +189,29 @@ class RunOrganizer(object):
         return None
 
     def organize(self):
+        try:
+            dst = self.args[0].lower()
+        except IndexError:
+            raise OrganizerExceptions.CommandLineArgumentException('Must Enter a destination argument.')
+        if dst == 'local':
+            path = '/Users/agreen/.stage/finished/'
+        elif dst == 'papa':
+            path = '/Volumes/Papa/.finished/'
+        else:
+            raise OrganizerExceptions.CommandLineArgumentException('Must Enter a location argument')
+
         run_first_name = False
         run_from_p = True
         files_to_top = True
         remove_files = True
-        top_level_path = "/Users/agreen/.stage/finished/"
-        # topLevelPath = '/Volumes/Charlie/.p/finished/'
-        #top_level_path = '/Volumes/Papa/.finished/'
-
-        target_path = os.path.join(top_level_path, 'organized')
+        target_path = os.path.join(path, 'organized')
         excluded_names = ['random', 'series', 'finished']
         names = Names(namesToExclude=excluded_names)
         if run_from_p:
             names.getNamesFromFilesAndDirs([target_path])
         else:
             names.getNamesFromFiles()
-        organizerL = Organizer(names, top_level_path, target_path)
+        organizerL = Organizer(names, path, target_path)
         organizerL.moveFilesForFirstAndLastName()
         if run_from_p:
             path_list = [
@@ -202,12 +222,12 @@ class RunOrganizer(object):
             ]
             names.nameList = []
             names.getNamesFromFilesAndDirs(path_list)
-            organizerP = Organizer(names, top_level_path, target_path)
+            organizerP = Organizer(names, path, target_path)
             organizerP.moveFilesForFirstAndLastName()
         if run_first_name:
             names.nameList = []
             names.getNamesFromFile()
-            organizer1 = Organizer(names, top_level_path, target_path)
+            organizer1 = Organizer(names, path, target_path)
             organizer1.moveFilesForFirstName()
         if files_to_top:
             mover = FilesToTop(target_path, excluded_names)
@@ -237,7 +257,15 @@ class RunOrganizer(object):
             ]
         excluded_names = ['random', 'series', 'finished']
         names = Names(namesToExclude=excluded_names)
-        names.updateCachedNames(path_list)
+        names.updateCachedNames(path_list, use_current_cache=False)
+        print('cached', len(names.allNames()), 'names')
+        return None
+
+    def move_root(self):
+        root_path = '/Volumes/Papa/.finished'
+        dir_to_exclude = ['organized']
+        move_root = MoveToRoot(root_path, dir_to_exclude)
+        move_root.move()
         return None
 
 run_organizer = RunOrganizer(sys.argv)

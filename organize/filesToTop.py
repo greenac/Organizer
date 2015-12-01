@@ -12,7 +12,7 @@ class FilesToTop:
         self.printFormatter = PrintFormatter()
 
     def makeNewFile(self, nameList, aFile, pathToFile, fileNumber):
-        if FileFormatter().fileContainsFormat(aFile, pathToFile):
+        if FileFormatter().file_contains_format(aFile, pathToFile):
             newFile = FileNamer().makeNewFileName(nameList, aFile, pathToFile)
             if newFile != aFile:
                 src = pathToFile + aFile
