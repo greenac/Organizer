@@ -43,11 +43,11 @@ class NameAdder:
                     os.path.join(self.path, old_name),
                     os.path.join(self.path, new_name)
                 )
-                print('moving:', old_name, '-----> to:', new_name, '\n')
+                #print('moving:', old_name, '-----> to:', new_name, '\n')
             i += 2
         return None
 
-    def renameFile(self, unknownFile, names):
+    def renameFile(self, unknownFile, names, should_print=True):
         old_name = unknownFile.file_name
         new_name = FileNamer().make_new_filename_multiple_names(
             self._handle_names(names),
@@ -58,7 +58,8 @@ class NameAdder:
             os.path.join(self.path, old_name),
             os.path.join(self.path, new_name)
         )
-        print('moving:', old_name, '-----> to:', new_name, '\n')
+        if should_print:
+            print('moving:', old_name, '-----> to:', new_name, '\n')
         return new_name
 
     def _handle_names(self, names):

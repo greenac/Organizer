@@ -2,7 +2,8 @@
 .file_names.txt
 .latest.txt
 .shell_completion
-.cached_names.json
+*cached_names.json
+unknown
 names.txt
 *.idea
 *.pyc

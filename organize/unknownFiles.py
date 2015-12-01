@@ -6,27 +6,27 @@ from organize.addDirNameToFiles import AddDirNameToFiles
 from organize.nameAdder import NameAdder
 
 class UnknownFiles:
-    def __init__(self, path, dirPaths, runLocal=False, namesNotToPrint=[]):
+    def __init__(self, path, dir_paths, run_local=False, excluded_names=[]):
         self.path = path
-        self.dirPaths = dirPaths
+        self.dir_paths = dir_paths
         self.names = Names()
-        self.namesNotToPrint = set(namesNotToPrint)
-        self.runLocal = runLocal
-        self.unknownFiles = []
-        self.nameAdder = NameAdder(None, path)
-        self.changedFiles = {}
+        self.excluded_names = set(excluded_names)
+        self.run_local = run_local
+        self.files = []
+        self.name_adder = NameAdder(None, path)
+        self.changed_files = {}
 
-    def fetchUnknownFiles(self):
-        if self.runLocal:
+    def fetch_unknown_files(self):
+        if self.run_local:
             self.names.getNamesFromFiles()
         else:
-            self.names.getNamesFromFilesAndDirs(self.dirPaths)
+            self.names.getNamesFromFilesAndDirs(self.dir_paths)
         files = os.listdir(self.path)
         printList = []
         for aFile in files:
             shouldPrint = True
             for name in self.names.nameList:
-                if aFile in self.namesNotToPrint or self.names.fileHasName(name, aFile):
+                if aFile in self.excluded_names or self.names.fileHasName(name, aFile):
                     shouldPrint = False
                     break
             printList.append(shouldPrint)
@@ -34,53 +34,37 @@ class UnknownFiles:
         for shouldPrint in printList:
             if shouldPrint:
                 unknownFile = UnknownFile(files[counter], counter)
-                self.unknownFiles.append(unknownFile)
+                self.files.append(unknownFile)
             counter += 1
         return None
 
-    def printUnknownFiles(self):
-        [print(unknownFile.index, '--', unknownFile.file_name) for unknownFile in self.unknownFiles]
+    def file_at_index(self, index):
+        return self.files[index]
+
+    def print_unknown_files(self):
+        [print(unknownFile.index, '--', unknownFile.file_name) for unknownFile in self.files]
         return None
 
-    def stepThroughFiles(self):
+    def step_through_files(self):
         try:
-            for unknownFile in self.unknownFiles:
+            for unknownFile in self.files:
                 print('\nUnknown file:', unknownFile.file_name)
                 if os.path.isdir(os.path.join(self.path, unknownFile.file_name)):
-                    self.listFilesInDirectory(unknownFile.file_name)
+                    self.list_files_in_directory(unknownFile.file_name)
                     choice = input('Add directory name to subfiles? y/n ')
-                    self.addDirNamesToSubfiles(choice, unknownFile)
+                    self.add_dir_names_to_sub_files(choice, unknownFile)
                 names = input('Names to add to: ' + unknownFile.file_name + ' ? ').strip(' ').split(',')
                 if names[0] == '':
                     continue
                 choice = input('\nAdd ' + str(names) + ' to ' + unknownFile.file_name + ' y/n ')
-                self.addNamesToFile(choice, unknownFile, names)
-            self.printSummary()
+                self.add_names_to_file(choice, unknownFile, names)
+            self.print_summary()
         except KeyboardInterrupt:
             print("\n\noh no...I'm dying...agggrrr...anyway cold hearted...")
-            self.printSummary()
+            self.print_summary()
         return None
 
-    def stepThroughFilesInterface(self):
-        try:
-            for unknownFile in self.unknownFiles:
-                print('\nUnknown file:', unknownFile.file_name)
-                if os.path.isdir(os.path.join(self.path, unknownFile.file_name)):
-                    self.listFilesInDirectory(unknownFile.file_name)
-                    choice = input('Add directory name to subfiles? y/n ')
-                    self.addDirNamesToSubfiles(choice, unknownFile)
-                names = input('Names to add to: ' + unknownFile.file_name + ' ? ').strip(' ').split(',')
-                if names[0] == '':
-                    continue
-                choice = input('\nAdd ' + str(names) + ' to ' + unknownFile.file_name + ' y/n ')
-                self.addNamesToFile(choice, unknownFile, names)
-            self.printSummary()
-        except KeyboardInterrupt:
-            print("\n\noh no...I'm dying...agggrrr...anyway cold hearted...")
-            self.printSummary()
-        return None
-
-    def listFilesInDirectory(self, dir):
+    def list_files_in_directory(self, dir):
         print('\tsub-files:')
         files = os.listdir(os.path.join(self.path, dir))
         for i in range(len(files)):
@@ -88,23 +72,33 @@ class UnknownFiles:
             print('\t\t',i, ':', file)
         return None
 
-    def addDirNamesToSubfiles(self, choice, unknownFile):
-        choice = choice.lower()
-        if choice == 'y' or choice == 'yes':
-            nameAdder = AddDirNameToFiles(unknownFile.file_name, self.path)
-            nameAdder.add()
+    def sub_files_for_file_index(self, fileIndex):
+        unknownFile = self.files[fileIndex]
+        return list(os.listdir(os.path.join(self.path, unknownFile.file_name)))
+
+    def add_dir_names_to_sub_files(self, unknownFile):
+        name_adder = AddDirNameToFiles(unknownFile.file_name, self.path)
+        name_adder.add(should_print=False)
         return None
 
-    def addNamesToFile(self, choice, unknownFile, names):
-        choice = choice.lower()
-        if choice == 'y' or choice == 'yes':
-            newName = self.nameAdder.renameFile(unknownFile, ','.join(names))
-            self.changedFiles[unknownFile.file_name] = newName
-        return None
+    def add_names_to_file(self, unknown_file, names):
+        new_name = self.name_adder.renameFile(
+            unknown_file,
+            ','.join(names),
+            should_print=False
+        )
+        self.changed_files[unknown_file.file_name] = new_name
+        return new_name
 
-    def printSummary(self):
+    def is_file_dir(self, file_index):
+        return os.path.isdir(os.path.join(self.path, self.files[file_index].file_name))
+
+    def number_of_unknowns(self):
+        return len(self.files)
+
+    def print_summary(self):
         print("Here's the summary:")
-        for oldName in self.changedFiles:
-            newName = self.changedFiles[oldName]
+        for oldName in self.changed_files:
+            newName = self.changed_files[oldName]
             print('\t' + oldName, 'became --->', newName)
         return None

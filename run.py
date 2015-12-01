@@ -1,7 +1,6 @@
 import sys
 import time
 import os
-import shutil
 
 import organize.organizerErros as OrganizerExceptions
 from organize.balance import Balancer
@@ -15,7 +14,7 @@ from organize.nameAdder import NameAdder
 from organize.createTestFiles import CreateTestFiles
 from organize.directoryMover import DirectoryMover
 from organize.addDirNameToFiles import AddDirNameToFiles
-from organize.unknownFilesInterface import UnknownFilesController
+from organize.unknownFilesController import UnknownFilesController
 
 class RunOrganizer(object):
     def __init__(self, args):
@@ -101,8 +100,8 @@ class RunOrganizer(object):
             #destinationPath = '/Volumes/Echo/.p/finished/'
             destinationPath = '/Volumes/Papa/.finished/organized/'
         elif dst == 'p':
-            sourcePath = '/Volumes/Charlie/.p/finished/'
-            destinationPath = '/Volumes/Charlie/.p/'
+            sourcePath = '/Volumes/Echo/.p/'
+            destinationPath = '/Volumes/Papa/.p/'
         elif dst == 'papa':
             sourcePath = '/Volumes/Papa/.finished/organized/'
             destinationPath = '/Volumes/Papa/.p/'
@@ -146,10 +145,23 @@ class RunOrganizer(object):
         #path = '/Volumes/Papa/.finished/'
         path = '/Users/agreen/.stage/finished/'
         do_not_print = ['.DS_Store', 'organized', 'music']
-        unknown = UnknownFiles(path, path_list, namesNotToPrint=do_not_print, runLocal=False)
-        unknown.fetchUnknownFiles()
-        unknown.printUnknownFiles()
-        unknown.stepThroughFiles()
+        unknown = UnknownFiles(path, path_list, excluded_names=do_not_print, run_local=False)
+        unknown.fetch_unknown_files()
+        unknown.print_unknown_files()
+        unknown.step_through_files()
+        return None
+
+    def unknown_interface(self):
+        path_list = [
+            '/Users/agreen/.stage/finished/organized/',
+            '/Volumes/Papa/.finished/organized/',
+            '/Volumes/Papa/.p/'
+            ]
+        #path = '/Volumes/Papa/.finished/'
+        path = '/Users/agreen/.stage/finished/'
+        do_not_print = ['.DS_Store', 'organized', 'music', 'finished']
+        interface = UnknownFilesController(path, path_list, hide=do_not_print)
+        interface.run()
         return None
 
     def remove_files(self):
@@ -226,23 +238,6 @@ class RunOrganizer(object):
         excluded_names = ['random', 'series', 'finished']
         names = Names(namesToExclude=excluded_names)
         names.updateCachedNames(path_list)
-        return None
-
-    def unknown_interface(self):
-        path_list = [
-            #'/Users/agreen/.stage/finished/organized/',
-            '/Volumes/Charlie/.p/',
-            '/Volumes/Charlie/.p/finished/',
-            '/Volumes/Echo/.p/finished/',
-            '/Volumes/Papa/.finished/',
-            '/Volumes/Papa/.finished/organized/',
-            '/Volumes/Papa/.p/'
-            ]
-        #path = '/Volumes/Papa/.finished/'
-        path = '/Users/agreen/.stage/finished/'
-        do_not_print = ['.DS_Store', 'organized', 'music']
-        interface = UnknownFilesController(path, path_list, hide=do_not_print)
-        interface.run()
         return None
 
 run_organizer = RunOrganizer(sys.argv)

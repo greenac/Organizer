@@ -141,3 +141,9 @@ class Names:
             json.dump(self.nameList, cachedNamesFile)
         cachedNamesFile.close()
         return None
+
+    def allNames(self):
+        return self.nameList
+
+    def allNamesUnderscored(self):
+        return [name.replace(' ', '_') for name in self.nameList]
