@@ -2,18 +2,21 @@ import os
 import shutil
 from organize.printFormatter import PrintFormatter
 
+
 class Organizer:
-    def __init__(self, names, topLevelDirPath, targetFolderRootPath):
-        self.topLevelDirectoryPath = topLevelDirPath
-        self.targetFolderRootPath = targetFolderRootPath
-        self.fileNames = os.listdir(topLevelDirPath)
+    def __init__(self, names, top_level_path, target_folder_path, files_to_exclude):
+        self.top_level_dir_path = top_level_path
+        self.target_folder_path = target_folder_path
+        self.fileNames = os.listdir(top_level_path)
         self.names = names
         self.dirNames = []
         self.printFormatter = PrintFormatter()
         self.repeatedDirName = "REPEATED_DIRECTORY"
+        self.dirs_to_move = {}
+        self.files_to_exclude = set(files_to_exclude)
 
     def newDirName(self, name):
-        nameList = self.names.seperateNames(name)
+        nameList = self.names.separate_names(name)
         if len(nameList) == 2:
             dirName = nameList[0] + "_" + nameList[1]
         else:
@@ -62,7 +65,7 @@ class Organizer:
         newDirName = self.newDirName(name)
         if repeat:
             newDirName = newDirName + "_repeat/"
-        newDirPath = os.path.join(self.targetFolderRootPath, newDirName)
+        newDirPath = os.path.join(self.target_folder_path, newDirName)
         return newDirPath
 
     def makeNewDirectory(self, name, repeat=False):
@@ -77,14 +80,14 @@ class Organizer:
     def filesForFirstAndLastName(self, name):
         files = []
         for aFile in self.fileNames:
-            if self.names.fileHasName(name, aFile):
+            if self.names.file_has_name(name, aFile):
                 files.append(aFile)
         for aFile in files:
             self.fileNames.remove(aFile)
         return files
 
     def filesForFirstName(self, name):
-        firstName = self.names.seperateNames(name)[0]
+        firstName = self.names.separate_names(name)[0]
         files = []
         for aFile in self.fileNames:
             if firstName.lower() in aFile.lower():
@@ -96,8 +99,8 @@ class Organizer:
     def moveFilesForFirstAndLastName(self):
         self.printNumberOfFiles()
         files = []
-        for name in self.names.nameList:
-            if self.names.hasFirstAndLastName(name):
+        for name in self.names.all_names():
+            if self.names.has_fist_and_last_name(name):
                 files = self.filesForFirstAndLastName(name)
             else:
                 files = self.filesForFirstName(name)
@@ -106,7 +109,7 @@ class Organizer:
                 newDir = self.makeNewDirectory(name)
                 printNames = []
                 for aFile in files:
-                    src = os.path.join(self.topLevelDirectoryPath, aFile)
+                    src = os.path.join(self.top_level_dir_path, aFile)
                     dst = os.path.join(dirPath, aFile)
                     if src != dst:
                         shutil.move(src, dst)
@@ -114,6 +117,35 @@ class Organizer:
                 self.printInfo(name, printNames, dirPath, newDir)
         self.printNumberOfFiles()
         return None
+
+    def move_files(self):
+        files = os.listdir(self.top_level_dir_path)
+        to_move = {}
+        for file in files:
+            if file not in self.files_to_exclude:
+                names_in_file = [name for name in self.names.all_names()
+                                 if self.names.file_has_name(name, file)]
+                ranking_name = self.ranker.rank(names_in_file)
+                if ranking_name:
+                    if ranking_name in self.dirs_to_move:
+                        files_for_name = self.dirs_to_move[ranking_name]
+                        files_for_name.append(file)
+                        to_move[ranking_name] = files_for_name
+                    else:
+                        to_move[ranking_name] = [file]
+        for dir_name, files in to_move:
+            is_new = self.makeNewDirectory(dir_name)
+            dir_path = self.makeNewDirectoryPath(dir_name)
+            printNames = []
+            for file in files:
+                src = os.path.join(self.top_level_dir_path, file)
+                dst = os.path.join(dir_path, file)
+                if src != dst:
+                    #shutil.move(src, dst)
+                    printNames.append(file)
+            self.printInfo(dir_name, printNames, dir_path, is_new)
+        return None
+
 
     def moveFilesForFirstName(self):
         self.printNumberOfFiles()
@@ -127,7 +159,7 @@ class Organizer:
                     isNewDir = self.makeNewDirectory(firstName, True)
                     names = []
                     for aFile in files:
-                        src = os.path.join(self.topLevelDirectoryPath, aFile)
+                        src = os.path.join(self.top_level_dir_path, aFile)
                         dst = os.path.join(dirPath, aFile)
                         if src != dst:
                             shutil.move(src, dst)
@@ -140,7 +172,7 @@ class Organizer:
                     isNewDir = self.makeNewDirectory(name)
                     names = []
                     for aFile in files:
-                        src = os.path.join(self.topLevelDirectoryPath, aFile)
+                        src = os.path.join(self.top_level_dir_path, aFile)
                         dst = os.path.join(dirPath, aFile)
                         if src != dst:
                             shutil.move(src, dst)
@@ -169,9 +201,4 @@ class Organizer:
         if numOfFiles > 0:
             title = 'Files in root directory: ' + str(numOfFiles)
             print('\n' + self.printFormatter.acrossScreenWithName('*', title) + '\n')
-        return None
-
-    def moveFiles(self):
-        self.moveFilesForFirstAndLastName()
-        self.moveFilesForFirstName()
         return None

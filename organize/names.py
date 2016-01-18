@@ -1,151 +1,149 @@
 import os
 import json
 
+
 class Names:
     def __init__(
             self,
-            fileName=os.path.join(os.path.dirname(os.path.realpath(__file__)), '../files/names.txt'),
-            cachedNameFile=os.path.join(os.path.dirname(os.path.realpath(__file__)), '../files/cached_names.json'),
-            completionFile=os.path.join(os.path.dirname(os.path.realpath(__file__)), '../files/.shell_completion'),
-            namesToExclude=[]
+            file_name=os.path.join(os.path.dirname(os.path.realpath(__file__)), '../files/names.txt'),
+            cached_file_name=os.path.join(os.path.dirname(os.path.realpath(__file__)), '../files/cached_names.json'),
+            names_to_exclude=None
     ):
-        self.fileName = fileName
-        self.cachedNameFile = cachedNameFile
-        self.completionFileName = completionFile
-        self.nameList = []
-        self.namesToExclude = namesToExclude
+        self.file_name = file_name
+        self.cached_name_file = cached_file_name
+        self.names_to_exclude = names_to_exclude if names_to_exclude else []
+        self.name_list = []
 
-    def cleanUp(self):
-        self.removeExcludedNames()
-        self.nameList.sort()
+    def cleanup(self):
+        self.remove_excluded_names()
+        self.name_list.sort()
         return None
 
-    def removeExcludedNames(self):
-        self.makeNameListUnique()
-        for name in list(self.nameList):
-            if name in self.namesToExclude:
-                self.nameList.remove(name)
+    def remove_excluded_names(self):
+        self.make_name_list_unique()
+        for name in list(self.name_list):
+            if name in self.names_to_exclude:
+                self.name_list.remove(name)
         return None
 
-    def getNamesFromFile(self):
-        namesFile = open(self.fileName, 'r')
-        for name in namesFile:
+    def get_names_from_file(self):
+        names_file = open(self.file_name, 'r')
+        for name in names_file:
             if name != '\n':
                 name = name.replace('_', ' ')
-                self.nameList.append(name.lower().replace('\n', ''))
-        namesFile.close()
+                self.name_list.append(name.lower().replace('\n', ''))
+        names_file.close()
         return None
 
-    def getNamesFromCacheFile(self):
-        with open(self.cachedNameFile, 'r') as cachedNamesFile:
+    def get_names_from_cached_file(self):
+        with open(self.cached_name_file, 'r') as cached_file:
             try:
-                cacheNames = json.load(cachedNamesFile)
-                self.nameList += cacheNames
+                cached_names = json.load(cached_file)
+                self.name_list += cached_names
             except ValueError:
                 pass
-        cachedNamesFile.close()
+        cached_file.close()
         return None
 
-    def getNamesFromCompletionFile(self):
-        names = []
-        namesFile = open(self.completionFileName, 'r')
-        for line in namesFile:
-            if line != '\n':
-                name = line.split('=')[0]
-                names.append(name)
-        namesFile.close()
-        self.nameList = self.nameList + self.removeUnderscore(names)
-        return None
-
-    def getNamesFromDirs(self, pathsList):
-        namesFromDirs = []
-        for path in pathsList:
+    def get_names_from_dirs(self, paths_list):
+        names_from_dirs = []
+        for path in paths_list:
             try:
-                namesForPath = list(os.listdir(path))
+                names_for_path = list(os.listdir(path))
             except FileNotFoundError:
                 continue
-            for name in namesForPath:
+            for name in names_for_path:
                 if not os.path.isdir(os.path.join(path, name)):
-                    namesForPath.remove(name)
-            namesFromDirs = namesFromDirs + namesForPath
-        self.nameList += self.removeUnderscore(namesFromDirs)
+                    names_for_path.remove(name)
+            names_from_dirs += names_for_path
+        self.name_list += self.remove_underscore(names_from_dirs)
         return None
 
-    def getNamesFromFiles(self, shouldCleanUp=True, use_current_cache=True):
-        self.getNamesFromFile()
-        self.getNamesFromCompletionFile()
+    def get_names_from_files(self, should_clean_up=True, use_current_cache=True):
+        self.get_names_from_file()
         if use_current_cache:
-            self.getNamesFromCacheFile()
-        if shouldCleanUp:
-            self.cleanUp()
+            self.get_names_from_cached_file()
+        if should_clean_up:
+            self.cleanup()
         return None
 
-    def getNamesFromFilesAndDirs(self, pathsList, use_current_cache=True):
-        self.getNamesFromFiles(shouldCleanUp=False)
-        self.getNamesFromDirs(pathsList)
-        self.cleanUp()
+    def get_names_from_files_and_dirs(self, paths_list, use_current_cache=True):
+        self.get_names_from_files(should_clean_up=False)
+        self.get_names_from_dirs(paths_list)
+        self.cleanup()
         return None
 
-    def makeNameListUnique(self):
-        self.nameList = list(set(self.nameList))
+    def make_name_list_unique(self):
+        self.name_list = list(set(self.name_list))
         return None
 
-    def removeUnderscore(self, nameList):
-        cleanNameList = []
-        for name in nameList:
-            cleanName = name.replace('_', ' ')
-            cleanNameList.append(cleanName)
-        return cleanNameList
+    def remove_underscore(self, name_list):
+        return [name.replace('_', ' ') for name in name_list]
 
-    def fileHasName(self, name, aFile, caseSensitive=False, firstOnly=False):
-        names = self.seperateNames(name)
-        firstName = names[0]
-        if firstOnly:
-            if caseSensitive:
-                if firstName in aFile:
+    def file_has_name(self, name, file, is_case_sensitive=False, first_only=False):
+        names = self.separate_names(name)
+        first_name = names[0]
+        if first_only:
+            if is_case_sensitive:
+                if first_name in file:
                     return True
                 return False
             else:
-                if firstName.lower() in aFile.lower():
+                if first_name.lower() in file.lower():
                     return True
                 return False
         else:
             if len(names) == 1:
                 return False
             else:
-                lastName = names[1]
-                if caseSensitive:
-                    if firstName in aFile and lastName in aFile:
+                last_name = names[1]
+                if is_case_sensitive:
+                    if first_name in file and last_name in file:
                         return True
                     return False
                 else:
-                    if firstName.lower() in aFile.lower() and lastName.lower() in aFile.lower():
+                    if first_name.lower() in file.lower() and last_name.lower() in file.lower():
                         return True
                     return False
 
-    def seperateNames(self, name):
+    def file_has_name_2(self, name, file):
+        if name.find(' ') >= 0:
+            name = name.replace(' ', '_')
+        return name in file
+
+    def separate_names(self, name):
         if '_' in name:
             splitter = '_'
         else:
             splitter = ' '
         return name.split(splitter, 1)
 
-    def hasFirstAndLastName(self, name):
-        names = self.seperateNames(name)
+    def has_fist_and_last_name(self, name):
+        names = self.separate_names(name)
         if len(names) == 2:
             return True
         else:
             return False
 
-    def updateCachedNames(self, paths, should_print=False, use_current_cache=True):
-        self.getNamesFromFilesAndDirs(paths)
-        with open(self.cachedNameFile, 'w') as cachedNamesFile:
-            json.dump(self.nameList, cachedNamesFile)
-        cachedNamesFile.close()
+    def update_cached_names(self, paths, should_print=False, use_current_cache=True):
+        self.get_names_from_dirs(paths)
+        self.get_names_from_files(use_current_cache=use_current_cache)
+        with open(self.cached_name_file, 'w') as cached_file:
+            json.dump(self.name_list, cached_file)
+        cached_file.close()
         return None
 
-    def allNames(self):
-        return self.nameList
+    def all_names(self):
+        return self.name_list
 
-    def allNamesUnderscored(self):
-        return [name.replace(' ', '_') for name in self.nameList]
+    def all_names_underscored(self):
+        return [name.replace(' ', '_') for name in self.name_list]
+
+    def underscored_name(self, name):
+        return name.replace(' ', '_')
+
+    def first_and_last_names(self):
+        return [name.split(' ') for name in self.name_list]
+
+    def names_in_file(self, file):
+        return [name for name in self.name_list if self.file_has_name_2(name, file)]

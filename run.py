@@ -16,6 +16,11 @@ from organize.directoryMover import DirectoryMover
 from organize.addDirNameToFiles import AddDirNameToFiles
 from organize.unknownFilesController import UnknownFilesController
 from organize.moveToRoot import MoveToRoot
+from organize.symLinker import SymLinker
+from organize.linkCostarsController import LinkCostarsController
+from organize.fileNamer import FileNamer
+from organize.formatFiles import FormatFiles
+
 
 class RunOrganizer(object):
     def __init__(self, args):
@@ -31,7 +36,12 @@ class RunOrganizer(object):
             'addnames',
             'testfiles',
             'cachenames',
-            'moveroot'
+            'moveroot',
+            'printcached',
+            'link',
+            'linkcostars',
+            'filenamer',
+            'formatfiles'
         ]
 
     def run(self):
@@ -62,10 +72,19 @@ class RunOrganizer(object):
             self.cache_names()
         elif control == 'moveroot':
             self.move_root()
+        elif control == 'printcached':
+            self.print_cached_names()
+        elif control == 'link':
+            self.link_files()
+        elif control == 'linkcostars':
+            self.link_costars()
+        elif control == 'filenamer':
+            self.name_file()
+        elif control == 'formatfiles':
+            self.format_files()
         else:
-            raise  OrganizerExceptions.UnknownArgumentExeption(
-                control + ' is not a valid argument. Available args are: '
-                + ', ' + str(self.valid_args)
+            raise OrganizerExceptions.UnknownArgumentExeption(
+                control + ' is not a valid argument. Available args are: ' + ', ' + str(self.valid_args)
             )
         return None
 
@@ -102,12 +121,12 @@ class RunOrganizer(object):
         if dst == 'local':
             sourcePath = '/Users/agreen/.stage/finished/organized/'
             #destinationPath = '/Volumes/Echo/.p/finished/'
-            destinationPath = '/Volumes/Papa/.finished/organized/'
+            destinationPath = '/Volumes/Papa/.p/'
         elif dst == 'p':
             sourcePath = '/Volumes/Echo/.p/'
             destinationPath = '/Volumes/Papa/.p/'
         elif dst == 'papa':
-            sourcePath = '/Volumes/Papa/.finished/organized/'
+            sourcePath = '/Volumes/Papa/.organized/'
             destinationPath = '/Volumes/Papa/.p/'
         else:
             message = 'Error: ' + dst + ' not a recognized destination. Enter either local or p as destination'
@@ -138,12 +157,11 @@ class RunOrganizer(object):
 
     def unknown_files(self):
         path_list = [
-            #'/Users/agreen/.stage/finished/organized/',
             '/Volumes/Charlie/.p/',
             '/Volumes/Charlie/.p/finished/',
             '/Volumes/Echo/.p/finished/',
             '/Volumes/Papa/.finished/',
-            '/Volumes/Papa/.finished/organized/',
+            '/Volumes/Papa/.organized/',
             '/Volumes/Papa/.p/'
             ]
         #path = '/Volumes/Papa/.finished/'
@@ -169,10 +187,10 @@ class RunOrganizer(object):
 
         path_list = [
             '/Users/agreen/.stage/finished/organized/',
-            '/Volumes/Papa/.finished/organized/',
+            '/Volumes/Papa/.organized/',
             '/Volumes/Papa/.p/'
             ]
-        do_not_print = ['.DS_Store', 'organized', 'music', 'finished']
+        do_not_print = ['.DS_Store', '.organized', 'music', 'finished']
         interface = UnknownFilesController(path, path_list, hide=do_not_print)
         interface.run()
         return None
@@ -197,38 +215,19 @@ class RunOrganizer(object):
             path = '/Users/agreen/.stage/finished/'
         elif dst == 'papa':
             path = '/Volumes/Papa/.finished/'
+        elif dst == 'test':
+            path = '/Users/agreen/Desktop/test/'
         else:
             raise OrganizerExceptions.CommandLineArgumentException('Must Enter a location argument')
-
-        run_first_name = False
-        run_from_p = True
         files_to_top = True
-        remove_files = True
-        target_path = os.path.join(path, 'organized')
+        target_path = os.path.join(path, '../.organized')
+        if not os.path.exists(target_path):
+            os.mkdir(target_path)
         excluded_names = ['random', 'series', 'finished']
-        names = Names(namesToExclude=excluded_names)
-        if run_from_p:
-            names.getNamesFromFilesAndDirs([target_path])
-        else:
-            names.getNamesFromFiles()
-        organizerL = Organizer(names, path, target_path)
-        organizerL.moveFilesForFirstAndLastName()
-        if run_from_p:
-            path_list = [
-                '/Volumes/Charlie/.p/',
-                '/Volumes/Charlie/.p/finished/',
-                '/Volumes/Echo/.p/finished/',
-                '/Volumes/Echo/.p/'
-            ]
-            names.nameList = []
-            names.getNamesFromFilesAndDirs(path_list)
-            organizerP = Organizer(names, path, target_path)
-            organizerP.moveFilesForFirstAndLastName()
-        if run_first_name:
-            names.nameList = []
-            names.getNamesFromFile()
-            organizer1 = Organizer(names, path, target_path)
-            organizer1.moveFilesForFirstName()
+        names = Names(names_to_exclude=excluded_names)
+        names.get_names_from_files_and_dirs([target_path])
+        organizer = Organizer(names, path, target_path, files_to_exclude=['.organized'])
+        organizer.moveFilesForFirstAndLastName()
         if files_to_top:
             mover = FilesToTop(target_path, excluded_names)
             mover.moveFilesToTop()
@@ -236,7 +235,7 @@ class RunOrganizer(object):
 
     def add_names(self):
         path = '/Users/agreen/.stage/finished/'
-        #path = '/Volumes/Papa/.finished/'
+        # path = '/Volumes/Papa/.finished/'
         adder = NameAdder(self.args, path)
         adder.renameFiles()
         return None
@@ -248,25 +247,71 @@ class RunOrganizer(object):
 
     def cache_names(self):
         path_list = [
-            #'/Users/agreen/.stage/finished/organized/',
-            '/Volumes/Charlie/.p/',
-            '/Volumes/Charlie/.p/finished/',
-            '/Volumes/Echo/.p/finished/',
-            '/Volumes/Papa/.finished/organized/',
+            '/Volumes/Papa/.organized/',
             '/Volumes/Papa/.p/'
-            ]
+        ]
         excluded_names = ['random', 'series', 'finished']
-        names = Names(namesToExclude=excluded_names)
-        names.updateCachedNames(path_list, use_current_cache=False)
-        print('cached', len(names.allNames()), 'names')
+        names = Names(names_to_exclude=excluded_names)
+        names.update_cached_names(path_list, use_current_cache=False)
+        print('cached', len(names.all_names()), 'names')
         return None
 
     def move_root(self):
         root_path = '/Volumes/Papa/.finished'
-        dir_to_exclude = ['organized']
+        dir_to_exclude = ['.organized']
         move_root = MoveToRoot(root_path, dir_to_exclude)
         move_root.move()
         return None
+
+    def print_cached_names(self):
+        excluded_names = ['random', 'series', 'finished']
+        names = Names(names_to_exclude=excluded_names)
+        names.get_names_from_cached_file()
+        all_names = names.all_names()
+        for i in range(len(all_names)):
+            print(i+1, ': ', all_names[i])
+        return None
+
+    def link_files(self):
+        sym_linker = SymLinker('/Volumes/Papa/.p')
+        sym_linker.setup()
+        sym_linker.link()
+        #sym_linker.remove_links()
+        return None
+
+    def link_costars(self):
+        try:
+            name = self.args[0].lower()
+        except IndexError:
+            raise OrganizerExceptions.CommandLineArgumentException('Must Enter a destination argument.')
+
+        path = '/Volumes/Papa/.p'
+        path_list = [
+            '/Users/agreen/.stage/finished/organized/',
+            '/Volumes/Papa/.organized/',
+            '/Volumes/Papa/.p/'
+            ]
+        do_not_print = ['.DS_Store', '.organized', 'music', 'finished']
+        interface = LinkCostarsController(name, path, path_list, hide=do_not_print)
+        interface.run()
+        return None
+
+    def name_file(self):
+        base_path = '/Volumes/Papa/.finished'
+        file = '[SomeText] Hello my (name is andre) [ANDRE]'
+        file_namer = FileNamer()
+        new_name = file_namer.clean_name_for_raw_file(file, base_path)
+        print('old name:', file, '\nnew name:', new_name)
+        return None
+
+    def format_files(self):
+        base_path = '/Volumes/Papa/.finished'
+        #base_path = '/Volumes/Papa/.p'
+        formatter = FormatFiles(base_path)
+        formatter.format()
+        #formatter.add_names_no_spaces()
+        return None
+
 
 run_organizer = RunOrganizer(sys.argv)
 run_organizer.run()

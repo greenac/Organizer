@@ -1,13 +1,12 @@
 import curses
 import traceback
 import os
-from organize.unknownFiles import UnknownFiles
+from organize.names import Names
 from organize.colors import Colors
-from organize.directoryNamer import DirectoryNamer
+from organize.nameAdder import NameAdder
 
-
-class UnknownFilesController:
-    def __init__(self, path, dir_paths, hide=None):
+class LinkCostarsController:
+    def __init__(self, name, root_path, dir_paths, hide=None):
         self.VERTICAL_START_POINT = 2
         self.VERTICAL_SPACER = 1
         self.INDENT_SIZE = 4
@@ -17,27 +16,23 @@ class UnknownFilesController:
         self.vertical_user_start = 0
         self.screen = curses.initscr()
         self.screen_params = {}
-        self.dir_namer = DirectoryNamer(path)
-        self.unknown_files = UnknownFiles(path=path, dir_paths=dir_paths, excluded_names=hide)
+        self.names = Names()
         self.current_file_index = 0
-        self.names = []
-        self.phases = _UnknownPhases()
+        self.costars = []
+        self.phases = _LinkCostarsPhases()
         self.current_phase = 0
         self.current_text = ''
+        self.current_name = name
+        self.root_path = root_path
         self.colors = Colors()
         self.first_time = True
-        self.path = path
-        self.all_names = []
-        self.modes = _UnknownMode()
-        self.mode = self.modes.entry
-        self.setup()
+        self.current_files = []
+        self.changed_files = {}
+        self._setup(dir_paths)
 
-    def setup(self):
-        self.dir_namer.get_dirs()
-        self.unknown_files.fetch_unknown_files()
-        if self.unknown_files.number_of_unknowns() == 0:
-            print("Couldn't find any unknown files...I have nothing to do here...avoir")
-            return None
+    def _setup(self, dir_paths):
+        self.names.get_names_from_files_and_dirs(dir_paths)
+        self.current_files = list(os.listdir(os.path.join(self.root_path, self.current_name)))
         self.screen.keypad(True)
         curses.start_color()
         for i in range(1, self.colors.count + 1):
@@ -47,10 +42,10 @@ class UnknownFilesController:
                 curses.COLOR_BLACK
             )
         curses.noecho()
-        self.all_names = self.unknown_files.names.all_names_underscored()
-        self.current_phase = self.phases.entry
         self.create_title()
+        self.show_files()
         self.vertical_user_start = self.vertical_position
+        self.step_through()
         return None
 
     def cleanup(self):
@@ -71,37 +66,30 @@ class UnknownFilesController:
             self.screen.clrtobot()
             self.screen.refresh()
             self.increment_file_index()
-        self.step_through()
+        else:
+            self.step_through()
         return None
 
     def increment_file_index(self):
-        if self.mode == self.modes.directories:
-            file_count = self.dir_namer.number_of_directories()
-        elif self.mode == self.modes.files:
-            file_count = self.unknown_files.number_of_unknowns()
-        else:
-            return None
         self.current_file_index += 1
-        # if  self.current_file_index < file_count:
-        #     self.step_through()
-        # else:
-        #     self.summary(on_exit=False)
-        if self.current_file_index >= file_count:
+        if self.current_file_index < len(self.current_files):
+            self.step_through()
+        else:
             self.summary(on_exit=False)
         return None
 
     def summary(self, on_exit=True):
         counter = 0
         lines = []
-        for old_name, new_name in self.unknown_files.changed_files.items():
+        for old_name, new_name in self.changed_files.items():
             lines.append(str(counter) + '.) ' + old_name + ' became: ' + new_name)
             counter += 1
         if on_exit:
-            print("All done...here is a summary on your unknown experience")
+            print("All done...here is a summary")
             [print(line) for line in lines]
         else:
             self.print_line(
-                "All done...here is a summary on your unknown experience",
+                "All done...here is a summary",
                 left_position=self.left_position,
                 vertical_position=self.vertical_position,
                 color=self.colors.green
@@ -116,8 +104,6 @@ class UnknownFilesController:
         return None
 
     def run(self):
-        self.vertical_position = self.VERTICAL_START_POINT
-        self.step_through()
         try:
             while True:
                 event = self.screen.getch()
@@ -148,10 +134,10 @@ class UnknownFilesController:
         self.print_line('UNKNOWN FILES', color=self.colors.blue)
         return None
 
-    def show_unknowns(self):
+    def show_files(self):
         y_pos = self.VERTICAL_START_POINT
-        for unknown_file in self.unknown_files.files[:30]:
-            info = str(unknown_file.index) + ' -- ' + unknown_file.file_name
+        for file in self.current_files[:30]:
+            info = file
             self.print_line(
                 info,
                 vertical_position=y_pos
@@ -161,97 +147,20 @@ class UnknownFilesController:
         self.screen.refresh()
         return None
 
-    def show_file_name(self, current_file):
-        self.print_blank_line()
-        self.print_line(
-            'CURRENT FILE: ' + current_file.file_name,
-            left_position=self.INDENT_SIZE,
-            vertical_position=self.vertical_position,
-            color=self.colors.magenta
-        )
-        return None
-
-    # handle printing and file manipulation section
     def step_through(self):
-        if self.mode == self.modes.entry:
-            self.step_through_entry()
-        elif self.mode == self.modes.directories:
-            self.step_through_directories()
-        else:
-            self.step_through_files()
-        return None
-
-    def step_through_entry(self):
-        self.print_line(
-            'How Doing? What to do today...',
-            vertical_position=self.vertical_position
-        )
-        self.print_line('Directories press: 1',
-                        left_position=self.INDENT_SIZE,
-                        vertical_position=self.vertical_position
-                        )
-        self.print_line(
-            'Files press: 2',
-            left_position=self.INDENT_SIZE,
-            vertical_position=self.vertical_position
-        )
-        self.print_blank_line()
-        return None
-
-    def step_through_directories(self):
-        current_file = self.dir_namer.file_at_index(self.current_file_index)
+        current_file = self.current_files[self.current_file_index]
         if self.current_phase == self.phases.show_file_name:
-            self.show_file_name(current_file)
-            self.current_phase = self.phases.ask_add_dir_name_to_sub_files
-
-        if self.current_phase == self.phases.ask_add_dir_name_to_sub_files:
-                self.print_line(
-                    'Add directory name: ' + current_file.file_name + ' to sub-files? y/n ',
-                    left_position=self.INDENT_SIZE,
-                    vertical_position=self.vertical_position,
-                    color=self.colors.cyan
-                )
-                sub_files = self.dir_namer.sub_files_for_file_at_index(self.current_file_index)
-                message = ''
-                for i in range(len(sub_files)):
-                    sub_file = sub_files[i]
-                    increment_vertical = i != len(sub_files) - 1
-                    message = str(i) + ' - ' + sub_file
-                    self.print_line(
-                        message,
-                        left_position=2*self.INDENT_SIZE,
-                        vertical_position=self.vertical_position,
-                        color=self.colors.green,
-                        increment_vertical=increment_vertical
-                    )
-                self.print_blank_line()
-                message += ' '
-                self.left_position = 2*self.INDENT_SIZE + len(message)
-                self.line_x0 = self.left_position
-        elif self.current_phase == self.phases.add_dir_name_to_sub_files:
-            self.print_blank_line()
-            files_before = self.dir_namer.sub_files_for_file_at_index(self.current_file_index)
-            self.dir_namer.rename_directory_files(self.current_file_index)
-            files_after = self.dir_namer.sub_files_for_file_at_index(self.current_file_index)
-            for i in range(len(files_before)):
-                self.print_moved_file(files_before[i], files_after[i])
             self.print_blank_line()
             self.print_line(
-                'RENAMED...KEEP MOVING!!',
+                'Current File: ' + current_file,
+                left_position=self.INDENT_SIZE,
                 vertical_position=self.vertical_position,
-                increment_vertical=True
+                color=self.colors.magenta
             )
-            self.current_phase = self.phases.confirm_add_dir_name
-        return None
-
-    def step_through_files(self):
-        current_file = self.unknown_files.file_at_index(self.current_file_index)
-        if self.current_phase == self.phases.show_file_name:
-            self.show_file_name(current_file)
             self.current_phase = self.phases.enter_names_for_file
 
         if self.current_phase == self.phases.enter_names_for_file:
-            message = 'Enter names to add to ' + current_file.file_name + ' '
+            message = 'Enter names to add to ' + current_file + ' '
             self.print_line(
                     message,
                     left_position=self.INDENT_SIZE,
@@ -262,7 +171,7 @@ class UnknownFilesController:
             self.left_position = self.INDENT_SIZE + len(message)
             self.line_x0 = self.left_position
         elif self.current_phase == self.phases.ask_add_name_to_file:
-            message = 'Add ' + str(self.names) + ' to: ' + current_file.file_name + '? '
+            message = 'Add ' + str(self.costars) + ' to: ' + current_file + '? '
             self.print_line(
                 message,
                 left_position=self.INDENT_SIZE,
@@ -273,50 +182,14 @@ class UnknownFilesController:
             self.left_position = self.INDENT_SIZE + len(message)
             self.line_x0 = self.left_position
         elif self.current_phase == self.phases.add_name_to_file:
-            new_name = self.unknown_files.add_names_to_file(current_file, self.names)
-            self.print_moved_file(current_file.file_name, new_name)
+            nameAdder = NameAdder([], os.path.join(self.root_path, self.current_name))
+            new_name = nameAdder.rename_file(current_file, ','.join(self.costars), should_print=False)
+            self.changed_files[current_file] = new_name
+            self.print_moved_file(current_file, new_name)
             self.reset(reset_full=True)
         return None
 
-    # handle input section
     def handle_return(self):
-        if self.mode == self.modes.entry:
-            reset_full = self.handle_entry_return_phase()
-        elif self.mode == self.modes.directories:
-            reset_full = self.handle_directories_return_phase()
-        else:
-            reset_full = self.handle_files_return_phase()
-        self.reset(reset_full=reset_full)
-        return None
-
-    def handle_entry_return_phase(self):
-        if self.current_text == '1':
-            self.mode = self.modes.directories
-        elif self.current_text == '2':
-            self.mode = self.modes.files
-        return True
-
-    def handle_directories_return_phase(self):
-        current_text = self.current_text.lower()
-        reset_full = False
-        if self.current_phase == self.phases.ask_add_dir_name_to_sub_files:
-            self.vertical_position += 1
-            if current_text == 'y' or current_text == 'yes':
-                self.current_phase = self.phases.add_dir_name_to_sub_files
-            elif self.current_file_index < len(self.dir_namer.all_directories()) - 1:
-                reset_full = True
-            else:
-                self.summary(on_exit=False)
-                return None
-        elif self.current_phase == self.phases.confirm_add_dir_name:
-            if self.current_file_index >= self.dir_namer.number_of_directories() - 1:
-                self.current_phase = self.phases.enter_names_for_file
-            else:
-                self.current_phase = self.phases.show_file_name
-            reset_full = True
-        return reset_full
-
-    def handle_files_return_phase(self):
         current_text = self.current_text.lower()
         reset_full = False
         if self.current_phase == self.phases.enter_names_for_file:
@@ -325,14 +198,14 @@ class UnknownFilesController:
                 self.current_phase = self.phases.show_file_name
                 reset_full = True
             else:
-                self.names = []
+                self.costars = []
                 for unclean_name in self.current_text.split(','):
                     if '_' in unclean_name:
                         unclean_name = unclean_name.replace(' ', '')
-                        self.names.append(unclean_name)
+                        self.costars.append(unclean_name)
                     else:
                         names = [part for part in unclean_name.split(' ') if part != '']
-                        self.names.append('_'.join(names))
+                        self.costars.append('_'.join(names))
                 self.print_blank_line()
                 self.current_phase = self.phases.ask_add_name_to_file
         elif self.phases.ask_add_name_to_file:
@@ -342,7 +215,8 @@ class UnknownFilesController:
             else:
                 self.current_phase = self.phases.show_file_name
                 reset_full = True
-        return reset_full
+        self.reset(reset_full=reset_full)
+        return None
 
     def handle_backspace(self):
         x_position = self.left_position - self.line_x0 + 1
@@ -427,38 +301,51 @@ class UnknownFilesController:
             del current_text_parts[0]
         underscored_name = '_'.join(current_text_parts)
         matched_names = []
-        for name in self.all_names:
+        for name in self.names.all_names_underscored():
             if len(underscored_name) <= len(name) and underscored_name == name[:len(underscored_name)]:
                 matched_names.append(name)
+
+        if len(matched_names) == 0:
+            self.print_line(
+                'No matched found',
+                left_position=self.INDENT_SIZE,
+                vertical_position=self.vertical_position + 1,
+                increment_vertical=False,
+                color=self.colors.yellow
+            )
+            self.screen.clrtoeol()
+            return None
+
         # add common letters to current_text
         letters_to_add = ''
-        if len(matched_names) > 0:
-            first_name = matched_names[0]
-            for i in range(len(underscored_name), len(first_name)):
-                letter = first_name[i]
-                has_letter = True
-                for j in range(1, len(matched_names)):
-                    try:
-                        if matched_names[j][i] != letter:
-                            has_letter = False
-                            break
-                    except IndexError:
+        first_name = matched_names[0]
+        for i in range(len(underscored_name), len(first_name)):
+            letter = first_name[i]
+            has_letter = True
+            for j in range(1, len(matched_names)):
+                try:
+                    if matched_names[j][i] != letter:
                         has_letter = False
                         break
-                if has_letter:
-                    letters_to_add += letter
-                else:
+                except IndexError:
+                    has_letter = False
                     break
-            if letters_to_add != '':
-                self.left_position += len(letters_to_add)
-                self.current_text += letters_to_add
-                left_start = self.left_position - len(self.current_text)
-                self.print_line(
-                    self.current_text,
-                    left_position=left_start,
-                    vertical_position=self.vertical_position,
-                    increment_vertical=False
-                )
+            if has_letter:
+                letters_to_add += letter
+            else:
+                break
+
+        if letters_to_add != '':
+            self.left_position += len(letters_to_add)
+            self.current_text += letters_to_add
+            left_start = self.left_position - len(self.current_text)
+            self.print_line(
+                self.current_text,
+                left_position=left_start,
+                vertical_position=self.vertical_position,
+                increment_vertical=False
+            )
+
         self.print_line(
             ', '.join(matched_names[:10]),
             left_position=self.INDENT_SIZE,
@@ -496,21 +383,10 @@ class UnknownFilesController:
         )
 
 
-class _UnknownPhases:
+class _LinkCostarsPhases:
     def __init__(self):
-        self.entry = 0
-        self.show_file_name = 1
-        self.ask_add_dir_name_to_sub_files = 2
-        self.add_dir_name_to_sub_files = 3
-        self.confirm_add_dir_name = 4
-        self.enter_names_for_file = 5
-        self.ask_add_name_to_file = 6
-        self.add_name_to_file = 7
-        self.exit = 8
-
-
-class _UnknownMode:
-    def __init__(self):
-        self.entry = 0
-        self.directories = 1
-        self.files = 2
+        self.show_file_name = 0
+        self.enter_names_for_file = 1
+        self.ask_add_name_to_file = 2
+        self.add_name_to_file = 3
+        self.exit = 4

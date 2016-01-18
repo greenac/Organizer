@@ -8,25 +8,7 @@ class NameAdder:
         self.path = path
         self.files = os.listdir(path)
 
-    def renameFilesOld(self):
-        counter = 0
-        for arg in self.arguments:
-            if counter % 2 == 0:
-                names = arg.split('_', 1)
-                firstName, lastName = names[0], names[1]
-            else:
-                indexes = [int(i) for i in arg.split(',')]
-                nameList = [firstName, lastName]
-                for index in indexes:
-                    oldFileName = self.files[index]
-                    newFileName = FileNamer().makeNewFileName(nameList, oldFileName, self.path)
-                    if newFileName != oldFileName:
-                        shutil.move(self.path + oldFileName, self.path + newFileName)
-                        print('moving: ' + oldFileName + ' -----> to: ' + newFileName + '\n')
-            counter += 1
-        return None
-
-    def renameFiles(self):
+    def rename_files(self):
         i = 0
         while i < len(self.arguments):
             names = self.arguments[i]
@@ -47,19 +29,18 @@ class NameAdder:
             i += 2
         return None
 
-    def renameFile(self, unknownFile, names, should_print=True):
-        old_name = unknownFile.file_name
+    def rename_file(self, file_name, names, should_print=True):
         new_name = FileNamer().make_new_filename_multiple_names(
             self._handle_names(names),
-            old_name,
+            file_name,
             self.path
         )
         shutil.move(
-            os.path.join(self.path, old_name),
+            os.path.join(self.path, file_name),
             os.path.join(self.path, new_name)
         )
         if should_print:
-            print('moving:', old_name, '-----> to:', new_name, '\n')
+            print('moving:', file_name, '-----> to:', new_name, '\n')
         return new_name
 
     def _handle_names(self, names):

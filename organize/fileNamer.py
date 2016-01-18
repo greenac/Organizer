@@ -3,7 +3,25 @@ from organize.organizerErros import WrongNameFormatException
 
 class FileNamer:
     def __init__(self):
-        self.punctuation = [' ','_','.','[',']',',','/','-','{','}','|','(',')','*','!']
+        self.punctuation = [
+            ' ',
+            '_',
+            '.',
+            '[',
+            ']',
+            ',',
+            '/',
+            '-',
+            '{',
+            '}',
+            '|',
+            '(',
+            ')',
+            '*',
+            '!',
+            '&',
+            "'"
+        ]
         self.fileFormatter = FileFormatter()
 
     def makeNewFileName(self, nameList, aFile, pathToFile):
@@ -113,3 +131,26 @@ class FileNamer:
                 if newName[len(newName) - 1] == '_':
                     newName = newName[:len(newName) - 1] + newName[len(newName):]
         return newName
+
+    def clean_name_for_raw_file(self, file, base_path):
+        ext = self.fileFormatter.get_format(file, base_path)
+        if ext:
+            file = file.rsplit('.', 1)[0]
+        for punctuation in self.punctuation:
+            file = file.replace(punctuation, '_')
+        to_remove = []
+        i = len(file) - 1
+        while i >= 0:
+            if file[i] == '_' and (i == 0 or i == len(file) - 1 or file[i - 1] == '_'):
+                to_remove.append(i)
+            i -= 1
+        for index in to_remove:
+            file = file[:index] + file[index + 1:]
+        if ext:
+            file += '.' + ext
+        return file.lower()
+
+
+
+
+
