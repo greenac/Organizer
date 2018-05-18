@@ -13,7 +13,8 @@ class FileFormatter:
             'mkv',
             'flv',
             'm4v',
-            'rmvb'
+            'rmvb',
+            'si'
         }
 
     def file_contains_format(self, file, base_path):

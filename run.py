@@ -20,6 +20,7 @@ from organize.symLinker import SymLinker
 from organize.linkCostarsController import LinkCostarsController
 from organize.fileNamer import FileNamer
 from organize.formatFiles import FormatFiles
+from organize.fileCounter import FileCounter
 
 
 class RunOrganizer(object):
@@ -41,7 +42,8 @@ class RunOrganizer(object):
             'link',
             'linkcostars',
             'filenamer',
-            'formatfiles'
+            'formatfiles',
+            'count'
         ]
 
     def run(self):
@@ -82,6 +84,8 @@ class RunOrganizer(object):
             self.name_file()
         elif control == 'formatfiles':
             self.format_files()
+        elif control == 'count':
+            self.count_files()
         else:
             raise OrganizerExceptions.UnknownArgumentExeption(
                 control + ' is not a valid argument. Available args are: ' + ', ' + str(self.valid_args)
@@ -189,7 +193,7 @@ class RunOrganizer(object):
             '/Users/agreen/.stage/finished/organized/',
             '/Volumes/Papa/.organized/',
             '/Volumes/Papa/.p/'
-            ]
+        ]
         do_not_print = ['.DS_Store', '.organized', 'music', 'finished']
         interface = UnknownFilesController(path, path_list, hide=do_not_print)
         interface.run()
@@ -197,7 +201,7 @@ class RunOrganizer(object):
 
     def remove_files(self):
         moveToTop = True
-        path = '/Volumes/Charlie/.p/'
+        path = '/Volumes/Papa/.finished/'
         excludedNames = ['random', 'series', 'finished']
         remover = FileRemover(path, ['sample'])
         remover.removeFiles(remover.path)
@@ -310,6 +314,18 @@ class RunOrganizer(object):
         formatter = FormatFiles(base_path)
         formatter.format()
         #formatter.add_names_no_spaces()
+        return None
+
+    def count_files(self):
+        top_dirs = [
+            '/Volumes/Papa/.p/',
+            '/Volumes/Papa/.organized/'
+        ]
+
+        file_counter = FileCounter(top_dirs)
+        file_counter.count_names()
+        #file_counter.print_results()
+        file_counter.make_histogram()
         return None
 
 

@@ -78,12 +78,37 @@ class FileCounter:
             )
         return None
 
-
-top_dirs = [
-    '/Volumes/Papa/.p/',
-    '/Volumes/Papa/.organized/'
-]
-
-file_counter = FileCounter(top_dirs)
-file_counter.count_names()
-file_counter.print_results()
+    def make_histogram(self):
+        num_of_bins = 100
+        counts = [len(value) for value in self.files.values()]
+        max_count = max(counts)
+        min_count = min(counts)
+        region = max_count - min_count
+        bin_size = int(region/num_of_bins)
+        print(
+            'min:', min_count,
+            'max:', max_count,
+            'range:', region,
+            'bins:', num_of_bins,
+            'bin size:', bin_size,
+            'entries:', len(counts)
+        )
+        bins = (num_of_bins + 1)*[0]
+        for count in counts:
+            i = int(count/bin_size)
+            try:
+                bins[i] += 1
+            except IndexError:
+                print('INDEX ERROR WHEN -- i:', i)
+                continue
+        x0 = min_count
+        results = []
+        ranges = []
+        for i in range(len(bins)):
+            results.append(str(x0) + ' - ' + str(x0 + bin_size) + ' : ')
+            x0 += bin_size
+        results.reverse()
+        bins.reverse()
+        max_just = len(results[len(results) - 1])
+        [print(results[i].ljust(max_just), bins[i]) for i in range(len(results))]
+        return None
