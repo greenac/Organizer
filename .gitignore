@@ -4,3 +4,5 @@
 *cached_names.json
 unknown
 names.txt
+__pycache__/
+*.pyc
